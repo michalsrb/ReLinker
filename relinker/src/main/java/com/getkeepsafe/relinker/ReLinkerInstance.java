@@ -177,8 +177,21 @@ public class ReLinkerInstance {
             }
 
             cleanupOldLibFiles(context, library, version);
-            libraryInstaller.installLibrary(context, libraryLoader.supportedAbis(),
-                    libraryLoader.mapLibraryName(library), workaroundFile, this);
+
+            try {
+                libraryInstaller.installLibrary(context, libraryLoader.supportedAbis(),
+                        libraryLoader.mapLibraryName(library), workaroundFile, this);
+            } catch(final MissingLibraryException e) {
+                log("Installing library from APK files failed too: %s", Log.getStackTraceString(e));
+
+                // Maybe the supportedAbis is wrong??? Lets try everything and hope that the market
+                // actually gave correctly split APKs. So we should be fine taking the first one that
+                // exists. If none exist, or if we load bad one, we'll fail. Which is no worse than if
+                // we did not try.
+                String fakeAbis[] = { "armeabi", "armeabi-v7a", "arm64-v8a", "x86", "x86_64" };
+                libraryInstaller.installLibrary(context, fakeAbis,
+                        libraryLoader.mapLibraryName(library), workaroundFile, this);
+            }
         }
 
         try {
